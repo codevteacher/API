@@ -1,6 +1,8 @@
-FROM node:16.8
+FROM node:18.12.1
 
-COPY . .
+WORKDIR /app
+
+COPY . /app/.
 
 
 RUN npm i

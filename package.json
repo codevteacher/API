@@ -1,6 +1,6 @@
 {
   "name": "codevteacher.com",
-  "version": "1.0.15",
+  "version": "1.0.25",
   "description": "",
   "author": "Jason Jafari",
   "private": true,
@@ -11,12 +11,12 @@
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "lint:check": "eslint -c .eslintrc.js --color .",
     "postmerge": "ls -la",
-    "precommit": "npm run verify && npm run increase-version",
+    "precommit": "npm run increase-version",
     "prepush": "npm run verify",
     "prebuild": "rimraf dist",
     "prepare": "husky install",
-    "verify": "ls -la && ls -la",
-    "build": "rm -rf dist && nest build",
+    "verify": "npm run lint:check && npm run test",
+    "build": "rm -rf dist && npm run verify && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "export $(xargs < .env) && rm -rf dist && nest start",
     "start:dev": "export $(xargs < .env) && rm -rf dist && nest start --watch",
@@ -41,6 +41,7 @@
     "rxjs": "^7.2.0"
   },
   "devDependencies": {
+    "@babel/eslint-plugin": "^7.19.1",
     "@nestjs/cli": "^9.0.0",
     "@nestjs/schematics": "^9.0.0",
     "@nestjs/testing": "^9.0.0",
