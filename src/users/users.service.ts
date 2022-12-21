@@ -1,7 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
+import { MailService } from 'src/mail/mail.service';
 import { MongodbService } from 'src/mongodb/mongodb.service';
 import projectionObj from '../commons/functions/projectionObj';
+
+import { v4 as uuidv4 } from 'uuid';
+import moment from 'moment';
+import { passwordHashed } from 'src/commons/functions/passwordHashed';
 
 const {
     ObjectId,
@@ -17,6 +22,7 @@ export class UsersService {
 
     constructor(
         private mongodbService: MongodbService,
+        private mailService: MailService,
     ) { }
 
 
@@ -54,6 +60,22 @@ export class UsersService {
         };
         // projectionObj
         return projectionObj(result, project);
+    }
+
+
+    async updateUserBy_id(_id, obj) {
+        await this.mongodbService.usersCol.updateOne(
+            { _id },
+            {
+                $set: {
+                    ...obj,
+                    lastChanges: moment().toISOString()
+                },
+            },
+            {
+                upsert: true,
+            }
+        );
     }
 
 
@@ -103,6 +125,66 @@ export class UsersService {
             // this.logger.error('<searchUsers> ' + error.message, error.stack);
             throw error;
         }
+    }
+
+
+    async resetPassword(username) {
+
+        const user = await this.findUserByUsername(username);
+        if (!user?.userId) {
+            throw new NotFoundException('can not find user with username ' + username);
+        }
+
+        const uidForResetPassword = uuidv4();
+
+        await this.updateUserBy_id(
+            user._id,
+            {
+                uidForResetPassword: uidForResetPassword
+            }
+        );
+
+
+
+        await this.mailService.sendEmail({
+            email: username,
+            subject: 'PAssword reset for codevteacher portals',
+            htmlBody: `
+                <h1>Hello dear ${user?.userId}</h1>
+                <p>you recently request for reset password and you can find reset link <a href='http://local.codevteacher.com:3100/#/resetPassword?repui=${uidForResetPassword}'>here</a></p>
+            `
+        });
+
+        //
+    }
+
+    async resetPasswordHandle(resetPasswordUid, newPassword) {
+
+        const user = await this.mongodbService.usersCol.findOne({
+            uidForResetPassword: resetPasswordUid
+        });
+        if (!user?.username) {
+            throw new UnprocessableEntityException('can not find any user with your information');
+        }
+
+        const hashPassword = await passwordHashed(newPassword);
+
+        await this.mongodbService.usersCol.updateOne(
+            { uidForResetPassword: resetPasswordUid },
+            {
+                $set: {
+                    password: hashPassword,
+                    lastChanges: moment().toISOString()
+                },
+            },
+            {
+                upsert: true,
+            }
+        );
+        return {
+            message: 'password updated successfully'
+        };
+        //
     }
 
 }

@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Request, UnprocessableEntityException, UseGuards } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LocalAuthGuard } from 'src/auth/local-auth.guard';
 import { Public } from 'src/commons/decorators/Public.decorator';
 import { Roles } from 'src/commons/decorators/roles.decorator';
 import { UsersService } from './users.service';
+import * as EmailValidator from 'email-validator';
 
 @Controller('users')
 export class UsersController {
@@ -26,7 +27,6 @@ export class UsersController {
     @Roles('TEACHER', 'SUPER_TEACHER')
     @Post('/findAllUsers')
     async findAllUsers(@Request() req) {
-        debugger;
 
         const findAllUsersArray = await this.usersService.findAll();
         return findAllUsersArray;
@@ -70,6 +70,39 @@ export class UsersController {
         };
     }
 
+
+
+    @Public()
+    @Post('/resetPassword')
+    async resetPassword(@Request() req) {
+        const username = req?.body?.username;
+        if (!username) {
+            throw new UnprocessableEntityException('User name is required');
+        }
+
+        if (!EmailValidator.validate(username)) {
+            throw new UnprocessableEntityException('User name must be an email address');
+        }
+        return this.usersService.resetPassword(username);
+    }
+
+
+    @Public()
+    @Post('/resetPasswordHandle')
+    async resetPasswordHandle(@Request() req) {
+        const resetPasswordUid = req?.body?.resetPasswordUid;
+        const password = req?.body?.password;
+        if (!resetPasswordUid || !password) {
+            throw new UnprocessableEntityException('missing information');
+        }
+
+        return await this.usersService.resetPasswordHandle(resetPasswordUid, password);
+
+        // if (!EmailValidator.validate(username)) {
+        //     throw new UnprocessableEntityException('User name must be an email address');
+        // }
+        // return this.usersService.resetPassword(username);
+    }
 
 
 

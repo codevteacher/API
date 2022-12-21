@@ -7,12 +7,14 @@ import { MongodbModule } from './mongodb/mongodb.module';
 import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from './commons/guards/roles.guard';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
+import { MailModule } from './mail/mail.module';
 
 @Module({
     imports: [
         AuthModule,
         UsersModule,
-        MongodbModule
+        MongodbModule,
+        MailModule
     ],
     controllers: [AppController],
     providers: [
